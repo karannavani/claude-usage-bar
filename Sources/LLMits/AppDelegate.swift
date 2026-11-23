@@ -7,7 +7,7 @@ import UsageCore
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
     private let menu = NSMenu()
-    private let sources: [any UsageSource] = [ClaudeSource(), ChatGPTSource()]
+    private let sources: [any UsageSource] = [ClaudeSource(), ChatGPTSource(), CursorSource()]
     /// What's known about each service, and the rules for what to fetch and show. Tested in UsageCore.
     private var tracker = UsageTracker()
     private var isRefreshing = false

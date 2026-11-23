@@ -392,6 +392,7 @@ enum ServiceLogo {
         let name = switch service {
         case .claude: "claude-spark"
         case .chatGPT: "openai-blossom"
+        case .cursor: "cursor-cube"
         }
         // Bundled by scripts/build-app.sh; absent under `swift run`, where headers show text only.
         guard let url = Bundle.main.url(forResource: name, withExtension: "svg"),

@@ -80,9 +80,16 @@ if grep -q '"access_token"' "$codex_home/auth.json" 2>/dev/null; then
   note "Found your Codex ChatGPT login (for ChatGPT limits)"
   found_login=true
 fi
+cursor_db="$HOME/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
+if [[ -f "$cursor_db" ]] && /usr/bin/sqlite3 "file:$cursor_db?mode=ro" \
+  "SELECT 1 FROM ItemTable WHERE key = 'cursorAuth/accessToken' AND length(value) > 0" 2>/dev/null | grep -q 1; then
+  note "Found your Cursor login (for Cursor limits)"
+  found_login=true
+fi
 if [[ "$found_login" == false ]]; then
-  note "No Claude Code or Codex login found yet. The app will install, but has nothing to show"
-  note "until you sign in to at least one: run 'claude' and sign in, or run 'codex login'."
+  note "No Claude Code, Codex or Cursor login found yet. The app will install, but has nothing to"
+  note "show until you sign in to at least one: run 'claude' and sign in, run 'codex login', or"
+  note "sign in to the Cursor app."
 fi
 
 # Use this checkout when run from a clone; otherwise download a fresh copy.

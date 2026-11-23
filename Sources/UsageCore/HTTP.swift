@@ -8,7 +8,7 @@ enum HTTP {
     }
 
     /// One shared session with no cache, cookies or credential storage: each poll is a single
-    /// small GET, so there's nothing worth keeping in memory or on disk between them.
+    /// small request, so there's nothing worth keeping in memory or on disk between them.
     static let session: URLSession = {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
@@ -21,7 +21,18 @@ enum HTTP {
     }()
 
     static func get(_ url: URL, headers: [String: String]) async throws -> Reply {
+        try await send(URLRequest(url: url), headers: headers)
+    }
+
+    static func post(_ url: URL, headers: [String: String], body: Data) async throws -> Reply {
         var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = body
+        return try await send(request, headers: headers)
+    }
+
+    private static func send(_ request: URLRequest, headers: [String: String]) async throws -> Reply {
+        var request = request
         request.setValue("LLMits", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         for (field, value) in headers {

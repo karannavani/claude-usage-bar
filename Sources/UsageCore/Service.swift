@@ -4,6 +4,7 @@ import Foundation
 public enum Service: String, CaseIterable, Codable, Sendable, Identifiable {
     case claude
     case chatGPT
+    case cursor
 
     public var id: String { rawValue }
 
@@ -11,14 +12,16 @@ public enum Service: String, CaseIterable, Codable, Sendable, Identifiable {
         switch self {
         case .claude: "Claude"
         case .chatGPT: "ChatGPT"
+        case .cursor: "Cursor"
         }
     }
 
-    /// The command-line tool whose login the app reads.
+    /// The tool whose login the app reads.
     public var loginTool: String {
         switch self {
         case .claude: "Claude Code"
         case .chatGPT: "Codex"
+        case .cursor: "Cursor"
         }
     }
 }

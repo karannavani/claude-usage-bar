@@ -183,6 +183,24 @@ public enum Format {
         "sci_plus": "Academic Researchers Plus",
     ]
 
+    /// A Cursor plan's display name, e.g. "Pro+" for `pro_plus`, from the membership type the
+    /// Cursor app caches. Unknown plans get no name rather than a guess.
+    public static func cursorPlan(_ membershipType: String?) -> String? {
+        guard let raw = membershipType?.lowercased(), !raw.isEmpty else { return nil }
+        return cursorPlanNames[raw]
+    }
+
+    private static let cursorPlanNames: [String: String] = [
+        "free": "Hobby",
+        "free_trial": "Pro Trial",
+        "pro": "Pro",
+        "pro_plus": "Pro+",
+        "ultra": "Ultra",
+        "enterprise": "Enterprise",
+        // Cursor included with SuperGrok, which shares its usage with the SuperGrok plan.
+        "super": "SuperGrok",
+    ]
+
     /// "Session (5h)", "Daily", "Weekly" or "Monthly" for a usage window's length.
     public static func windowName(seconds: Int?) -> String {
         guard let seconds, seconds > 0 else { return "Usage" }

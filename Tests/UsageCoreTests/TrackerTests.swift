@@ -9,6 +9,10 @@ private func usage(_ service: Service, _ percent: Double, _ severity: Severity =
     ])
 }
 
+/// The services these tests exercise. Others the app supports are left out, so each expectation
+/// lists only the services the test is about.
+private let services: [Service] = [.claude, .chatGPT]
+
 private func minutes(_ count: Double) -> Date {
     now.addingTimeInterval(count * 60)
 }
@@ -94,11 +98,11 @@ private func minutes(_ count: Double) -> Date {
         tracker.record(.success(usage(.chatGPT, 10)), for: .chatGPT, at: now)
         // Claude is held back until its backoff ends, forced or not. ChatGPT is fetched when it's
         // due, or when forced once its numbers are two minutes old.
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: true, now: minutes(1)).isEmpty)
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: true, now: minutes(3)) == [.chatGPT])
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: false, now: minutes(3)).isEmpty)
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: false, now: minutes(6)) == [.chatGPT])
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: false, now: minutes(10)) == [.claude, .chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: true, now: minutes(1)).isEmpty)
+        #expect(tracker.servicesToFetch(from: services, force: true, now: minutes(3)) == [.chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: false, now: minutes(3)).isEmpty)
+        #expect(tracker.servicesToFetch(from: services, force: false, now: minutes(6)) == [.chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: false, now: minutes(10)) == [.claude, .chatGPT])
     }
 
     @Test func checksAreScheduledByOutcome() {
@@ -137,6 +141,7 @@ private func minutes(_ count: Double) -> Date {
         var tracker = UsageTracker()
         #expect(tracker.isLoading)
         tracker.record(.notSignedIn, for: .chatGPT, at: now)
+        tracker.record(.notSignedIn, for: .cursor, at: now)
         #expect(tracker.isLoading)
         tracker.record(.success(usage(.claude, 1)), for: .claude, at: now)
         #expect(!tracker.isLoading)
@@ -213,6 +218,7 @@ private func minutes(_ count: Double) -> Date {
         var before = UsageTracker()
         before.record(.success(usage(.claude, 100, .critical)), for: .claude, at: now)
         before.record(.success(usage(.chatGPT, 36)), for: .chatGPT, at: now)
+        before.record(.success(usage(.cursor, 5)), for: .cursor, at: now)
         let data = try #require(before.snapshot.encoded())
 
         var after = UsageTracker()
@@ -223,13 +229,13 @@ private func minutes(_ count: Double) -> Date {
         // ...out of date if old...
         #expect(after.headline(at: minutes(20))?.isStale == true)
         // ...and checked once they're two minutes old, not before, even by Refresh.
-        #expect(after.servicesToFetch(from: Service.allCases, force: true, now: minutes(1)).isEmpty)
-        #expect(after.servicesToFetch(from: Service.allCases, force: false, now: minutes(2)) == [.claude, .chatGPT])
+        #expect(after.servicesToFetch(from: services, force: true, now: minutes(1)).isEmpty)
+        #expect(after.servicesToFetch(from: services, force: false, now: minutes(2)) == [.claude, .chatGPT])
         // A login that has gone since drops out once its checks don't find it.
         after.record(.notSignedIn, for: .chatGPT, at: minutes(2))
         after.record(.notSignedIn, for: .chatGPT, at: minutes(3))
-        #expect(after.signedInServices == [.claude])
-        #expect(after.snapshot.services.keys.sorted { $0.rawValue < $1.rawValue } == [.claude])
+        #expect(after.signedInServices == [.claude, .cursor])
+        #expect(after.snapshot.services.keys.sorted { $0.rawValue < $1.rawValue } == [.claude, .cursor])
     }
 
     @Test func savedNumbersNeverReplaceLiveOnes() {
@@ -245,13 +251,13 @@ private func minutes(_ count: Double) -> Date {
     /// numbers from the last two minutes, so a glance at the menu never trips a rate limit.
     @Test func forcedChecksSkipNumbersUnderTwoMinutesOld() {
         var tracker = UsageTracker()
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: true, now: now) == [.claude, .chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: true, now: now) == [.claude, .chatGPT])
         tracker.record(.success(usage(.claude, 10)), for: .claude, at: now)
         // An expired Codex login (common when Codex isn't used much) once made every opening of
         // the menu fetch Claude again too.
         tracker.record(.tokenExpired(plan: nil), for: .chatGPT, at: now)
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: true, now: minutes(0.5)) == [.chatGPT])
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: true, now: minutes(2.5)) == [.claude, .chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: true, now: minutes(0.5)) == [.chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: true, now: minutes(2.5)) == [.claude, .chatGPT])
     }
 
     @Test func garbageSavedDataIsIgnored() {
@@ -270,10 +276,10 @@ private func minutes(_ count: Double) -> Date {
 
         var soon = UsageTracker()
         soon.restore(saved, at: minutes(5.1))
-        #expect(soon.servicesToFetch(from: Service.allCases, force: true, now: minutes(5.1)).isEmpty)
-        #expect(soon.servicesToFetch(from: Service.allCases, force: false, now: minutes(7)) == [.claude])
+        #expect(soon.servicesToFetch(from: services, force: true, now: minutes(5.1)).isEmpty)
+        #expect(soon.servicesToFetch(from: services, force: false, now: minutes(7)) == [.claude])
         #expect(soon.state(of: .chatGPT)?.problem == .rateLimited(until: minutes(65)))
-        #expect(soon.servicesToFetch(from: Service.allCases, force: false, now: minutes(65)) == [.claude, .chatGPT])
+        #expect(soon.servicesToFetch(from: services, force: false, now: minutes(65)) == [.claude, .chatGPT])
         // Another rate limit straight after carries on doubling.
         soon.record(.rateLimited(retryAfter: nil), for: .chatGPT, at: minutes(65))
         #expect(soon.state(of: .chatGPT)?.backoffUntil == minutes(75))
@@ -283,7 +289,7 @@ private func minutes(_ count: Double) -> Date {
         later.restore(saved, at: minutes(120))
         #expect(later.state(of: .chatGPT)?.backoffUntil == nil)
         #expect(later.state(of: .chatGPT)?.problem == nil)
-        #expect(later.servicesToFetch(from: Service.allCases, force: false, now: minutes(120)) == [.claude, .chatGPT])
+        #expect(later.servicesToFetch(from: services, force: false, now: minutes(120)) == [.claude, .chatGPT])
         later.record(.rateLimited(retryAfter: nil), for: .chatGPT, at: minutes(120))
         #expect(later.state(of: .chatGPT)?.backoffUntil == minutes(125))
     }
@@ -377,7 +383,8 @@ private func check(_ tracker: inout UsageTracker, _ sources: [any UsageSource], 
         var tracker = UsageTracker()
         tracker.record(.failed(.offline), for: .claude, at: now)
         tracker.record(.failed(.offline), for: .chatGPT, at: now)
-        #expect(tracker.signedInServices == [.claude, .chatGPT])
+        tracker.record(.failed(.offline), for: .cursor, at: now)
+        #expect(tracker.signedInServices == [.claude, .chatGPT, .cursor])
         #expect(!tracker.isLoading)
     }
 
@@ -421,13 +428,13 @@ private func check(_ tracker: inout UsageTracker, _ sources: [any UsageSource], 
 
         let dayBack = now.addingTimeInterval(-86_400)
         #expect(tracker.nextWake(after: dayBack) == dayBack)
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: false, now: dayBack) == [.claude, .chatGPT])
+        #expect(tracker.servicesToFetch(from: services, force: false, now: dayBack) == [.claude, .chatGPT])
         // Numbers from "tomorrow" are out of date, and fetched when asked.
         #expect(tracker.isStale(.claude, at: dayBack))
 
         // Half an hour back: checks run now; a rate limit's wait runs longer, but never past an hour.
         let halfHourBack = now.addingTimeInterval(-1800)
-        #expect(tracker.servicesToFetch(from: Service.allCases, force: false, now: halfHourBack) == [.claude])
+        #expect(tracker.servicesToFetch(from: services, force: false, now: halfHourBack) == [.claude])
         #expect(tracker.nextWake(after: halfHourBack) == halfHourBack)
     }
 
