@@ -1,3 +1,8 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/llmits-icon-dark.png">
+  <img src="docs/llmits-icon.png" alt="The LLMits app icon: a dark rounded square holding a grid of white dots, some lit and some dimmed" width="96" height="96">
+</picture>
+
 # LLMits
 
 See how much of your Claude and ChatGPT plans you've used, right in your Mac's menu bar.
@@ -105,7 +110,7 @@ Running `./install.sh` from a clone builds and installs that checkout. While you
 | `Sources/LLMits` | The menu bar item and its menu. |
 | `Support` | The app's `Info.plist`; its icon, as made in Icon Composer (`AppIcon.icon`) and compiled (`CompiledIcon`); and the Claude and OpenAI logos with their sources (`Logos`). |
 | `scripts/build-app.sh` | Builds `build/LLMits.app`; `--install` also copies it to `/Applications` (or `~/Applications` if that isn't writable) and opens it. |
-| `scripts/build-icon.sh` | Compiles `AppIcon.icon` into `CompiledIcon` (needs Xcode 26 or later). Run it after changing the icon and commit the result, so the app builds without Xcode. |
+| `scripts/build-icon.sh` | Compiles `AppIcon.icon` into `CompiledIcon`, and renders the README's copies of the icon into `docs` (needs Xcode 26 or later). Run it after changing the icon and commit the result, so the app builds without Xcode. |
 | `install.sh` | The one-line installer and uninstaller. |
 
 ## Disclaimer
