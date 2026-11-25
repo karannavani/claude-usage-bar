@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Installs LLMits by building it from source into ~/Applications.
+# Installs LLMits by building it from source into /Applications (or ~/Applications if that isn't
+# writable by this account).
 #
 #   Install:    curl -fsSL https://raw.githubusercontent.com/karannavani/llmits/main/install.sh | bash
 #   Uninstall:  curl -fsSL https://raw.githubusercontent.com/karannavani/llmits/main/install.sh | bash -s -- --uninstall
@@ -12,8 +13,13 @@ REPO="https://github.com/karannavani/llmits.git"
 APP_NAME="LLMits"
 EXECUTABLE="LLMits"
 BUNDLE_ID="io.github.karannavani.llmits"
-DEST="$HOME/Applications/$APP_NAME.app"
-OLD_APP="$HOME/Applications/Claude Usage Bar.app"
+# Everywhere this or an earlier version may have put the app: it used to go in ~/Applications.
+APPS=(
+  "/Applications/$APP_NAME.app"
+  "$HOME/Applications/$APP_NAME.app"
+  "/Applications/Claude Usage Bar.app"
+  "$HOME/Applications/Claude Usage Bar.app"
+)
 
 step() { printf '\033[1;34m==>\033[0m \033[1m%s\033[0m\n' "$*"; }
 note() { printf '    %s\n' "$*"; }
@@ -23,18 +29,21 @@ if [[ "${1:-}" == "--uninstall" ]]; then
   step "Uninstalling $APP_NAME"
   removed=false
   for name in "$EXECUTABLE" ClaudeUsageBar; do
-    pkill -x "$name" 2>/dev/null || true
+    pkill -u "$UID" -x "$name" 2>/dev/null || true
   done
-  for app in "$DEST" "$OLD_APP"; do
-    if [[ -d "$app" ]]; then
-      rm -rf "$app"
+  for app in "${APPS[@]}"; do
+    [[ -d "$app" ]] || continue
+    removed=true
+    # Carry on if one can't be removed (another account's copy in /Applications, say).
+    if rm -rf "$app" 2>/dev/null; then
       note "Removed $app"
-      removed=true
+    else
+      note "Couldn't remove $app; delete it in the Finder, or ask an administrator to."
     fi
   done
   defaults delete "$BUNDLE_ID" >/dev/null 2>&1 || true
   defaults delete io.github.karannavani.claude-usage-bar >/dev/null 2>&1 || true
-  [[ "$removed" == true ]] || note "$APP_NAME wasn't installed in ~/Applications."
+  [[ "$removed" == true ]] || note "$APP_NAME wasn't installed in /Applications or ~/Applications."
   note "If you had turned on Launch at Login, also remove it in"
   note "System Settings > General > Login Items."
   exit 0
@@ -118,11 +127,12 @@ if ! "$source_dir/scripts/build-app.sh" --install >"$build_log" 2>&1; then
   fi
   fail "The build failed. Full log: $build_log"
 fi
-grep -E '^(Replaced|Warning)' "$build_log" | sed 's/^/    /' || true
+grep -E '^(Replaced|Moved|Warning)' "$build_log" | sed 's/^/    /' || true
+installed_dir="$(sed -nE 's|^Installed (.*)/[^/]*\.app$|\1|p' "$build_log" | tail -n 1)"
 rm -f "$build_log"
 
 step "Done"
-note "$APP_NAME is installed in ~/Applications."
+note "$APP_NAME is installed in ${installed_dir:-/Applications}."
 note "Look for a small grid of dots and a percentage in your menu bar; click it for every limit."
 note "To start it automatically, choose Launch at Login from its menu."
 note "Can't see it? If you use Bartender or Ice, it may be in the hidden section."

@@ -22,7 +22,7 @@ Then paste this into Terminal:
 curl -fsSL https://raw.githubusercontent.com/karannavani/llmits/main/install.sh | bash
 ```
 
-In about a minute, it checks your Mac has what it needs, builds LLMits into the Applications folder in your home folder and opens it. You're welcome to [read the script](install.sh) first.
+In about a minute, it checks your Mac has what it needs, builds LLMits into your Applications folder and opens it. You're welcome to [read the script](install.sh) first.
 
 To start LLMits whenever you log in, choose **Launch at Login** from its menu.
 
@@ -42,6 +42,7 @@ To start LLMits whenever you log in, choose **Launch at Login** from its menu.
 | What you see | What it means |
 | --- | --- |
 | No icon in the menu bar | LLMits may not be running: open it from Spotlight. If you use a menu bar manager such as Bartender or Ice, look in its hidden section. macOS also hides icons when the menu bar is crowded, especially beside the notch. On macOS Tahoe 26 or later, make sure LLMits is allowed in **System Settings > Menu Bar**. |
+| Bartender or Ice shows LLMits's app icon instead of its dots, or can't move it | On macOS 27, menu bar managers only see items from apps in `/Applications`. Earlier versions installed into `~/Applications`: run the install command again from an administrator account to move it. |
 | A service is missing | Sign in to its tool (see [Install](#install)). A Codex login that uses an OpenAI API key has no ChatGPT plan limits to show. If you keep Codex's files somewhere other than `~/.codex`, install with `CODEX_HOME` set. |
 | "Login expired. Run Claude Code to renew it." | Normal if you haven't used Claude Code for a while. Run it once (signing in again if it asks) and LLMits catches up within a minute. For ChatGPT, run Codex instead. |
 | "Too many requests. Retrying at 21:15." | The service asked for fewer checks. LLMits waits until then, even after a restart, and longer (up to an hour) if it keeps happening. |
@@ -103,7 +104,7 @@ Running `./install.sh` from a clone builds and installs that checkout. While you
 | `Sources/UsageCore` | Each service's logins, requests and responses (`Claude/`, `ChatGPT/`), the `UsageTracker` that decides what to fetch and show, and formatting. No AppKit, and unit-tested. |
 | `Sources/LLMits` | The menu bar item and its menu. |
 | `Support` | The app's `Info.plist`; its icon, as made in Icon Composer (`AppIcon.icon`) and compiled (`CompiledIcon`); and the Claude and OpenAI logos with their sources (`Logos`). |
-| `scripts/build-app.sh` | Builds `build/LLMits.app`; `--install` also copies it to `~/Applications` and opens it. |
+| `scripts/build-app.sh` | Builds `build/LLMits.app`; `--install` also copies it to `/Applications` (or `~/Applications` if that isn't writable) and opens it. |
 | `scripts/build-icon.sh` | Compiles `AppIcon.icon` into `CompiledIcon` (needs Xcode 26 or later). Run it after changing the icon and commit the result, so the app builds without Xcode. |
 | `install.sh` | The one-line installer and uninstaller. |
 
